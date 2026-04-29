@@ -130,7 +130,7 @@ const CameraView = ({ videoRef, stream, photosCount, onCapture, onClose, onDone,
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#080808] flex flex-col z-50"
+      className="fixed inset-0 bg-[#080808] flex flex-col z-50 overflow-hidden"
     >
       <div className="relative flex-1 overflow-hidden bg-zinc-950 flex items-center justify-center border-b border-border-dim">
         <video 
@@ -139,6 +139,18 @@ const CameraView = ({ videoRef, stream, photosCount, onCapture, onClose, onDone,
           playsInline 
           className="w-full h-full object-cover opacity-90"
         />
+
+        {/* Guía visual para el reporte de radio */}
+        <div className="absolute inset-x-12 inset-y-24 border-2 border-accent/30 border-dashed rounded-sm pointer-events-none flex flex-col items-center justify-center">
+            <div className="bg-accent/10 px-4 py-1 text-[10px] text-accent font-bold uppercase tracking-[0.3em] mb-4">
+                Encuadrar Reporte (Horizontal)
+            </div>
+            {/* Corners */}
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-accent" />
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-accent" />
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-accent" />
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-accent" />
+        </div>
         
         <div className="absolute top-8 left-8 flex items-baseline gap-2 bg-black/40 backdrop-blur-md px-6 py-3 border border-border-dim">
           <span className="text-2xl font-serif text-accent">{photosCount < 10 ? `0${photosCount}` : photosCount}</span>
@@ -243,7 +255,7 @@ const EditorView = ({ photos, isProcessing, onAdd, onRemove, onGenerate }: Edito
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
-                  className="relative aspect-square border border-border-dim bg-[#111] p-1 group shadow-xl"
+                  className="relative aspect-video border border-border-dim bg-[#111] p-1 group shadow-xl"
               >
                   <img src={item.dataUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Captured" />
                   <button 
@@ -321,7 +333,7 @@ const ResultView = ({ collageUrl, onEdit, onShare, onDownload, onNew }: ResultVi
       <div className="space-y-8">
           <div className="space-y-2">
               <p className="text-[10px] text-dim-text uppercase tracking-widest">Dimensiones</p>
-              <p className="text-2xl font-serif text-accent">4096 × 4096 px</p>
+              <p className="text-2xl font-serif text-accent">Landscape HD</p>
           </div>
           <div className="p-4 bg-[#161616] border border-[#222]">
               <p className="text-[10px] text-dim-text uppercase tracking-tighter leading-relaxed italic">
@@ -349,7 +361,7 @@ const ResultView = ({ collageUrl, onEdit, onShare, onDownload, onNew }: ResultVi
           <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="aspect-square bg-[#111] shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-border-dim p-1 transform transition-transform hover:scale-[1.01]"
+              className="aspect-[4/3] bg-[#111] shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-border-dim p-1 transform transition-transform hover:scale-[1.01]"
           >
           {collageUrl && <img src={collageUrl} className="w-full h-full object-contain" alt="Final Collage" />}
           </motion.div>
@@ -450,10 +462,12 @@ export default function App() {
     
     const { cols, rows } = getGridDimensions(photos.length);
     const canvas = document.createElement('canvas');
-    const gap = 20;
-    const baseSize = 1024;
-    canvas.width = baseSize * cols + gap * (cols + 1);
-    canvas.height = baseSize * rows + gap * (rows + 1);
+    const gap = 24;
+    const baseWidth = 1200; // Landscape width
+    const baseHeight = 900; // Landscape height (4:3)
+    
+    canvas.width = baseWidth * cols + gap * (cols + 1);
+    canvas.height = baseHeight * rows + gap * (rows + 1);
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -474,11 +488,11 @@ export default function App() {
         const col = i % cols;
         const row = Math.floor(i / cols);
         
-        const x = gap + col * (baseSize + gap);
-        const y = gap + row * (baseSize + gap);
+        const x = gap + col * (baseWidth + gap);
+        const y = gap + row * (baseHeight + gap);
         
         const imgRatio = img.width / img.height;
-        const targetRatio = 1;
+        const targetRatio = baseWidth / baseHeight;
         let sw, sh, sx, sy;
 
         if (imgRatio > targetRatio) {
@@ -494,7 +508,7 @@ export default function App() {
         }
 
         ctx.filter = 'contrast(1.1) brightness(1.02) saturate(1.05)';
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, baseSize, baseSize);
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, baseWidth, baseHeight);
         ctx.filter = 'none';
 
         ctx.imageSmoothingEnabled = true;
@@ -518,17 +532,21 @@ export default function App() {
       const response = await fetch(collageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'collage.jpg', { type: 'image/jpeg' });
-      if (navigator.share) {
+      
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Mi Collage de Fotos',
-          text: '¡Mira el collage que acabo de crear!',
+          title: 'Reporte de Radio - CollageCam',
+          text: 'Reporte digitalizado en alta resolución.',
         });
       } else {
-        downloadCollage();
+        throw new Error('Web Share API not supported for files');
       }
     } catch (err) {
       console.error("Error sharing:", err);
+      // Mensaje explicativo para el usuario
+      alert("Para compartir directamente por WhatsApp, abre esta app en una pestaña nueva o instálala en tu pantalla de inicio. Por ahora, guardaremos la foto en tu galería.");
+      downloadCollage();
     }
   };
 
