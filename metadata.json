@@ -1,0 +1,8 @@
+{
+  "name": "CollageCam",
+  "description": "Una aplicación sencilla e intuitiva para capturar momentos y crear collages de alta calidad al instante, sin complicaciones.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
