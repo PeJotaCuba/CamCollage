@@ -32,46 +32,80 @@ interface LandingViewProps {
   onStart: () => void;
 }
 
-const LandingView = ({ onStart }: LandingViewProps) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, scale: 0.95 }}
-    className="flex flex-col items-center justify-center min-h-screen text-center p-8 bg-pure-dark"
-  >
-    <div className="relative mb-8">
-      <motion.div
-         animate={{ rotate: [0, 5, -5, 0] }}
-         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-         className="w-40 h-40 border border-border-dim rounded-sm flex items-center justify-center"
-      >
-         <Grid className="text-accent/20 w-16 h-16" />
-      </motion.div>
-      <div className="absolute inset-0 border border-accent/10 -rotate-3 rounded-sm pointer-events-none" />
-    </div>
+const LandingView = ({ onStart }: LandingViewProps) => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-    <h1 className="text-6xl font-serif tracking-tight text-white mb-6">CollageCam</h1>
-    <p className="text-dim-text max-w-sm mb-16 text-sm uppercase tracking-[0.3em] font-light italic">
-      Mejora de imagen en alta resolución.<br/>Sin pérdida de calidad.
-    </p>
-    
-    <button 
-      id="start-button"
-      onClick={onStart}
-      className="group relative px-12 py-6 border border-border-dim hover:border-accent transition-all duration-500 overflow-hidden"
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex flex-col items-center justify-center min-h-screen text-center p-8 bg-pure-dark"
     >
-      <div className="relative z-10 flex items-center gap-4">
-        <span className="text-xs uppercase tracking-[0.4em] font-bold text-white group-hover:text-accent transition-colors">Abrir Cámara</span>
-        <Camera className="w-4 h-4 text-accent" />
+      <div className="relative mb-8">
+        <motion.div
+           animate={{ rotate: [0, 5, -5, 0] }}
+           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+           className="w-40 h-40 border border-border-dim rounded-sm flex items-center justify-center"
+        >
+           <Grid className="text-accent/20 w-16 h-16" />
+        </motion.div>
+        <div className="absolute inset-0 border border-accent/10 -rotate-3 rounded-sm pointer-events-none" />
       </div>
-      <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-[95%] transition-transform duration-500 opacity-10" />
-    </button>
 
-    <footer className="fixed bottom-8 text-[9px] uppercase tracking-[0.3em] text-[#444]">
-      Versión 1.0.4 - Procesamiento HD Activo
-    </footer>
-  </motion.div>
-);
+      <h1 className="text-6xl font-serif tracking-tight text-white mb-6">CollageCam</h1>
+      <p className="text-dim-text max-w-sm mb-16 text-sm uppercase tracking-[0.3em] font-light italic">
+        Mejora de imagen en alta resolución.<br/>Sin pérdida de calidad.
+      </p>
+      
+      <div className="flex flex-col gap-4 items-center">
+        <button 
+          id="start-button"
+          onClick={onStart}
+          className="group relative px-12 py-6 border border-border-dim hover:border-accent transition-all duration-500 overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center gap-4">
+            <span className="text-xs uppercase tracking-[0.4em] font-bold text-white group-hover:text-accent transition-colors">Abrir Cámara</span>
+            <Camera className="w-4 h-4 text-accent" />
+          </div>
+          <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-[95%] transition-transform duration-500 opacity-10" />
+        </button>
+
+        {deferredPrompt && (
+          <button 
+            onClick={handleInstall}
+            className="text-[10px] uppercase tracking-[0.3em] text-accent/60 hover:text-accent transition-colors mt-4 flex items-center gap-2"
+          >
+            <Plus className="w-3 h-3" />
+            Instalar App Nativa
+          </button>
+        )}
+      </div>
+
+      <footer className="fixed bottom-8 text-[9px] uppercase tracking-[0.3em] text-[#444]">
+        Versión 1.0.5 - Procesamiento HD Activo
+      </footer>
+    </motion.div>
+  );
+};
 
 interface CameraViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
